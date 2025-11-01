@@ -52,7 +52,7 @@ class I18nManager {
       const LOCALES_DIR = resolveAssetDir({
         envVar: "GITHRU_LOCALES_DIR",
         callerDirname: getDirname(),
-        callerMetaUrl: import.meta.url,
+        // callerMetaUrl: import.meta.url,
         moduleAnchors: ["resources/locales"],
         packageAnchors: ["dist/resources/locales", "resources/locales", "src/resources/locales"],
         requiredFiles: ["en.json"],

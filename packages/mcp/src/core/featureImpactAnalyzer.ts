@@ -1,8 +1,8 @@
 import { Octokit } from "@octokit/rest";
-import { GitHubUtils } from "../common/utils.js";
 import * as fs from "fs";
-import * as path from "path";
+import path from "node:path";
 import type { FeatureImpactAnalyzerInputs } from "../common/types.js";
+import { GitHubUtils } from "../common/utils.js";
 import { getDirname } from "../common/assetResolver.js";
 import { getHtmlAssets } from "../common/htmlAssets.js";
 import { getI18n } from "../common/i18n.js";
@@ -62,15 +62,7 @@ export class McpReportGenerator {
   private repo: string;
 
   constructor({ repoUrl, prNumber, githubToken, locale }: FeatureImpactAnalyzerInputs) {
-    if (locale) {
-      getI18n().setLocale(locale);
-    }
-    /**
-     * @TODO: Issue #1012
-     * Remote MCP 서버에서 Github Token을 읽어들일 수가 없는 이슈로 인해 주석처리
-     */
-    // const config = Config.getInstance();
-    // const githubToken = config.getGithubToken();
+    if (locale) getI18n().setLocale(locale);
 
     this.repoUrl = repoUrl;
     this.prNumber = prNumber;
@@ -245,12 +237,12 @@ export class McpReportGenerator {
       );
 
     try {
-      const baseDir = path.join(__dirname, "../html");
-      const mainTplPath = path.join(baseDir, "feature-impact.html");
+      const assets = getHtmlAssets();
+      const mainTplPath = assets.path("feature-impact.html");
 
       const title = `Feature Impact · ${prInfo.repoUrl} · PR #${prInfo.prNumber}`;
 
-      if (!fs.existsSync(mainTplPath)) {
+      if (!assets.exists("feature-impact.html")) {
         throw new Error(`Missing template: ${mainTplPath}`);
       }
 
@@ -261,10 +253,10 @@ export class McpReportGenerator {
               const s = Number(x.score ?? 0);
               const r = htmlEscape(String(x.rule ?? ""));
               return `<tr>
-                          <td>${p}</td>
-                          <td class="val-right">${s}</td>
-                          <td class="val-center">${r}</td>
-                        </tr>`;
+                        <td>${p}</td>
+                        <td class="val-right">${s}</td>
+                        <td class="val-center">${r}</td>
+                      </tr>`;
             })
             .join("")
         : `<tr><td colspan="3" class="val-center" style="color:#777;">No long-tail items</td></tr>`;
@@ -272,7 +264,7 @@ export class McpReportGenerator {
       const labelsJson = JSON.stringify(pathLongTail.map((x) => x.path ?? ""));
       const scoresJson = JSON.stringify(pathLongTail.map((x) => Number(x.score ?? 0)));
 
-      let template = fs.readFileSync(mainTplPath, "utf8");
+      let template = assets.readText("feature-impact.html");
       const notesHtml = "";
 
       const html = replaceMapSafe(template, {
@@ -294,18 +286,20 @@ export class McpReportGenerator {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error("Chart generation error:", error);
 
-      const errorTemplatePath = getHtmlAssets().path("error-chart.html");
+      const assets = getHtmlAssets();
+      const errorTemplatePath = assets.path("error-chart.html");
 
-      let errorTemplate = fs.existsSync(errorTemplatePath)
-        ? fs.readFileSync(errorTemplatePath, "utf8")
+      let errorTemplate = assets.exists("error-chart.html")
+        ? assets.readText("error-chart.html")
         : `<!doctype html><meta charset="utf-8"><pre>{{ERROR_MESSAGE}}</pre>`;
 
-      const templatePath = getHtmlAssets().path("feature-impact.html");
+      const templatePath = assets.path("feature-impact.html");
 
       const debugInfo = [
-        `Template directory exists: ${fs.existsSync(getHtmlAssets().baseDir)}`,
-        `Chart template exists: ${fs.existsSync(templatePath)}`,
-        `Error template exists: ${fs.existsSync(errorTemplatePath)}`,
+        `Template base: ${assets.baseDir}`,
+        `Chart template exists: ${assets.exists("feature-impact.html")}`,
+        `Error template exists: ${assets.exists("error-chart.html")}`,
+        `CWD: ${process.cwd()}`,
       ].join("\n");
 
       errorTemplate = replaceMapSafe(errorTemplate, {
@@ -322,8 +316,6 @@ export class McpReportGenerator {
 
 function replaceMapSafe(tpl: string, map: Record<string, string>) {
   let out = tpl;
-  for (const [k, v] of Object.entries(map)) {
-    out = out.split(`{{${k}}}`).join(v);
-  }
+  for (const [k, v] of Object.entries(map)) out = out.split(`{{${k}}}`).join(v);
   return out;
 }

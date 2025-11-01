@@ -4,8 +4,8 @@ import * as fs from "fs";
 import { GitHubUtils, CommonUtils } from "../common/utils.js";
 import type { ContributorRecommenderInputs, ContributorCandidate, ContributorRecommendation } from "../common/types.js";
 import { getDirname } from "../common/assetResolver.js";
-import { getI18n } from "common/i18n.js";
-import { getHtmlAssets } from "common/htmlAssets.js";
+import { getI18n } from "../common/i18n.js";
+import { getHtmlAssets } from "../common/htmlAssets.js";
 
 const __dirname = getDirname();
 
@@ -25,16 +25,7 @@ export class ContributorRecommender {
   private until: string;
 
   constructor(inputs: ContributorRecommenderInputs) {
-    /**
-     * @TODO: Issue #1012
-     * Remote MCP 서버에서 Github Token을 읽어들일 수가 없는 이슈로 인해 주석처리
-     */
-    // const config = Config.getInstance();
-    // const githubToken = config.getGithubToken();
-
-    if (inputs.locale) {
-      getI18n().setLocale(inputs.locale);
-    }
+    if (inputs.locale) getI18n().setLocale(inputs.locale);
 
     this.octokit = GitHubUtils.createGitHubAPIClient(inputs.githubToken);
 
@@ -124,7 +115,6 @@ export class ContributorRecommender {
       });
 
       const contributors = new Map<string, { commits: number; files: Set<string> }>();
-
       const recentCommits = commits.slice(0, 50);
 
       for (const commit of recentCommits) {
@@ -138,7 +128,6 @@ export class ContributorRecommender {
 
         const contributor = contributors.get(author)!;
         contributor.commits++;
-
         contributor.files.add("*");
       }
 
@@ -196,7 +185,6 @@ export class ContributorRecommender {
     return Array.from(contributors.entries())
       .map(([name, data]) => {
         const ownership = maxFiles > 0 ? data.files.size / maxFiles : 0;
-
         const commitScore = totalCommits > 0 ? data.commits / totalCommits : 0;
         const score = commitScore * 0.6 + ownership * 0.4;
 
@@ -242,16 +230,16 @@ export class ContributorRecommender {
     const { candidates, notes } = recommendation;
 
     try {
-      if (candidates.length === 0) {
-        let template = fs.readFileSync(getHtmlAssets().path("no-contributors.html"), "utf8");
+      const assets = getHtmlAssets();
 
+      if (candidates.length === 0) {
+        let template = assets.readText("no-contributors.html");
         const notesHtml = notes.map((note) => `<p style="color: #666; font-size: 14px;">📝 ${note}</p>`).join("");
         template = template.replace("{{NOTES}}", notesHtml);
-
         return template;
       }
 
-      let template = fs.readFileSync(getHtmlAssets().path("contributors-chart.html"), "utf8");
+      let template = assets.readText("contributors-chart.html");
 
       const names = candidates.map((c) => c.name);
       const scores = candidates.map((c) => c.score);
@@ -268,8 +256,7 @@ export class ContributorRecommender {
           <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${c.score}</td>
           <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${c.signals.recentCommits}</td>
           <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${c.signals.ownership}</td>
-        </tr>
-        `
+        </tr>`
         )
         .join("");
 
@@ -284,13 +271,15 @@ export class ContributorRecommender {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error("Chart generation error:", error);
 
-      let errorTemplate = fs.readFileSync(getHtmlAssets().path("error-chart.html"), "utf8");
+      const assets = getHtmlAssets();
+      let errorTemplate = assets.readText("error-chart.html");
 
-      const templatePath = getHtmlAssets().path("contributors-chart.html");
-      const debugInfo = `Template dir: ${getHtmlAssets().baseDir} ...
-          Contributors template exists: ${fs.existsSync(templatePath)}
-          No-contributors template exists: ${fs.existsSync(getHtmlAssets().path("no-contributors.html"))}
-          Error template exists: ${fs.existsSync(getHtmlAssets().path("error-chart.html"))}`;
+      const templatePath = assets.path("contributors-chart.html");
+      const debugInfo = `Template base: ${assets.baseDir}
+        Contributors template exists: ${assets.exists("contributors-chart.html")}
+        No-contributors template exists: ${assets.exists("no-contributors.html")}
+        Error template exists: ${assets.exists("error-chart.html")}
+        CWD: ${process.cwd()}`;
 
       errorTemplate = errorTemplate.replace("{{ERROR_MESSAGE}}", errorMessage);
       errorTemplate = errorTemplate.replace("{{TEMPLATE_PATH}}", templatePath);

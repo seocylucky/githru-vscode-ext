@@ -53,7 +53,7 @@ export function registerAuthorWorkPatternTool(server: McpServer) {
         }
 
         return {
-          content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
+          content: [{ type: "text", text: JSON.stringify(payload, null, 2), mimeType: "text/html" }],
         };
       } catch (err: any) {
         return {

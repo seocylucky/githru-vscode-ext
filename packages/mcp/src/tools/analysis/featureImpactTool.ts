@@ -63,7 +63,9 @@ export function registerFeatureImpactTool(server: McpServer) {
         }
       } catch (err: any) {
         return {
-          content: [{ type: "text", text: `Analysis error occurred: ${err?.message ?? String(err)}` }],
+          content: [
+            { type: "text", text: `Analysis error occurred: ${err?.message ?? String(err)}`, mimeType: "text/html" },
+          ],
         };
       }
     }

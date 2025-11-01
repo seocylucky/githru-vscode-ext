@@ -61,12 +61,6 @@ export class AuthorWorkPatternAnalyzer {
 
   constructor(private args: AuthorWorkPatternArgs) {
     const { owner, repo } = GitHubUtils.parseRepoUrl(args.repoPath);
-    /**
-     * @TODO: Issue #1012
-     * Remote MCP 서버에서 Github Token을 읽어들일 수가 없는 이슈로 인해 주석처리
-     */
-    // const config = Config.getInstance();
-    // const githubToken = config.getGithubToken();
 
     this.owner = owner;
     this.repo = repo;
@@ -163,9 +157,8 @@ export class AuthorWorkPatternAnalyzer {
       .catch(() => false);
 
     if (!exists) {
-      return {
-        content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }],
-      };
+      // 템플릿이 없으면 JSON으로라도 반환
+      return { content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }] };
     }
 
     const from = new Date(payload.period.from).toISOString().slice(0, 10);
@@ -220,6 +213,7 @@ export class AuthorWorkPatternAnalyzer {
       .replaceAll("{{DONUT_LABELS_JSON}}", donutLabelsJson)
       .replaceAll("{{DONUT_VALUES_JSON}}", donutValuesJson)
       .replaceAll("{{DONUT_COLORS_JSON}}", donutColorsJson)
+      // </script> 이스케이프(호스트 렌더러 파싱 안전)
       .replaceAll("</script>", "<\\/script>");
 
     return { content: [{ type: "text" as const, text: html }] };
