@@ -9,7 +9,7 @@
 		"dev": "npx @smithery/cli dev",
     "build": "npx tsc && npm run copy:assets",
     "build:clean": "rimraf dist && npm run build",
-    "copy:assets": "copyfiles \"src/resources/html/**/*\" dist/html && copyfiles \"src/resources/locales/**/*\" dist/resources/locales",
+    "copy:assets": "copyfiles -f \"src/resources/html/**/*.html\" dist/html && copyfiles -f \"src/resources/locales/**/*.json\" dist/resources/locales",
 		"watch": "npx tsc -w"
 	},
 	"keywords": [],
