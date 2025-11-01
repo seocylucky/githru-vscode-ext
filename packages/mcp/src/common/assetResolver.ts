@@ -53,8 +53,7 @@ type ResolveDirOpts = {
 export function resolveAssetDir(opts: ResolveDirOpts): string {
   const {
     envVar,
-    callerMetaUrl,
-    callerDirname = getDirname(callerMetaUrl),
+    callerDirname = getDirname(),
     packageRoot = findPackageRoot(callerDirname),
     moduleAnchors = [],
     packageAnchors = [],

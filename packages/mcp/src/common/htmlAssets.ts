@@ -9,7 +9,7 @@ export function getHtmlAssets() {
   const TEMPLATES_DIR = resolveAssetDir({
     envVar: "GITHRU_TEMPLATES_DIR",
     callerDirname: getDirname(),
-    callerMetaUrl: import.meta.url,
+    // callerMetaUrl: (0, eval)("import.meta?.url") as string | undefined,
     moduleAnchors: ["html", "../html"],
     packageAnchors: ["dist/html", "html", "src/html"],
     requiredFiles: [
